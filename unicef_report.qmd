@@ -1,0 +1,646 @@
+---
+title: "When Children Bear the Burden"
+subtitle: "A UNICEF Data Analysis of Adolescent Mortality and Malaria Diagnostics Worldwide"
+author: "Your Name — DCU Student ID: XXXXXXX"
+date: today
+format:
+  html:
+    embed-resources: true
+    code-fold: true
+    code-summary: "Show code"
+    code-tools: true
+    toc: true
+    toc-depth: 3
+    toc-title: "📋 Contents"
+    toc-location: left
+    smooth-scroll: true
+    highlight-style: github
+    fig-align: center
+    fig-dpi: 150
+    page-layout: full
+    theme: cosmo
+execute:
+  warning: false
+  message: false
+  echo: true
+---
+
+```{=html}
+<style>
+/* ── Palette ──────────────────────────────────────────── */
+:root {
+  --green-dark:   #1b5e20;
+  --green-mid:    #2e7d32;
+  --green-bright: #43a047;
+  --green-light:  #e8f5e9;
+  --green-border: #a5d6a7;
+  --text-main:    #212121;
+  --text-muted:   #555555;
+}
+
+/* ── Base ─────────────────────────────────────────────── */
+body {
+  background: #ffffff !important;
+  color: var(--text-main);
+  font-family: "Inter", "Segoe UI", sans-serif;
+  font-size: 1.02rem;
+  line-height: 1.78;
+}
+
+/* ── Headings ─────────────────────────────────────────── */
+h1, h2, h3 { color: var(--green-dark); font-weight: 700; margin-top: 2rem; }
+h1 { font-size: 2.1rem; border-bottom: 3px solid var(--green-bright); padding-bottom: .4rem; }
+h2 { font-size: 1.5rem;  border-left: 5px solid var(--green-bright); padding-left: .75rem; }
+h3 { font-size: 1.2rem;  color: var(--green-mid); }
+
+/* ── Sidebar TOC ──────────────────────────────────────── */
+#quarto-sidebar {
+  background: var(--green-light) !important;
+  border-right: 2px solid var(--green-border);
+}
+.sidebar-item-text { font-size: .92rem; }
+.sidebar-item-container .active > .sidebar-item-text {
+  color: var(--green-dark); font-weight: 700;
+}
+
+/* ── Callout / stat boxes ─────────────────────────────── */
+.stat-box {
+  background: var(--green-light);
+  border-left: 5px solid var(--green-bright);
+  border-radius: 6px;
+  padding: .75rem 1.2rem;
+  margin: .8rem 0;
+  font-size: .97rem;
+}
+.stat-box strong { color: var(--green-dark); }
+
+/* ── Chart note ───────────────────────────────────────── */
+.chart-note {
+  background: #f9f9f9;
+  border-left: 4px solid var(--green-border);
+  border-radius: 4px;
+  padding: .65rem 1.1rem;
+  color: var(--text-muted);
+  font-size: .93rem;
+  margin-top: .5rem;
+  margin-bottom: 2rem;
+}
+
+/* ── Code ─────────────────────────────────────────────── */
+.sourceCode { border-left: 4px solid var(--green-border) !important; }
+
+/* ── Links ────────────────────────────────────────────── */
+a { color: var(--green-mid); }
+a:hover { color: var(--green-dark); text-decoration: underline; }
+
+/* ── HR ───────────────────────────────────────────────── */
+hr { border-color: var(--green-border); margin: 2rem 0; }
+
+/* ── Footer ───────────────────────────────────────────── */
+.site-footer {
+  background: var(--green-light);
+  border-top: 2px solid var(--green-border);
+  padding: 1.8rem 2rem;
+  margin-top: 3rem;
+  text-align: center;
+  font-size: .88rem;
+  color: var(--text-muted);
+}
+.site-footer a { margin: 0 .8rem; display: inline-block; vertical-align: middle; }
+.site-footer img { height: 38px; opacity: .85; transition: opacity .2s; vertical-align: middle; }
+.site-footer img:hover { opacity: 1; }
+.footer-logos { margin: .9rem 0 .4rem; }
+.footer-brand {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #005b99;
+  vertical-align: middle;
+  letter-spacing: .5px;
+}
+.footer-brand.unicef  { color: #00aeef; }
+.footer-brand.worldbank { color: #009edb; }
+</style>
+```
+
+---
+
+## 🌿 Introduction
+
+Every day, roughly **2,500 children and adolescents aged 10 to 19** die somewhere in the world.
+Across the 33 years spanning **1990 to 2023**, UNICEF recorded a global total of over **34 million
+adolescent deaths** — a figure that dwarfs most publicised humanitarian crises yet receives
+comparatively little sustained attention. These are not deaths in the abstract; they are young
+people who never completed their education, never raised families, never reached their potential.
+
+This report analyses two interconnected dimensions of child health using UNICEF's global datasets:
+
+- **The geography and trajectory of adolescent mortality** — which countries carry the heaviest
+  burden, how the toll has shifted over three decades, and how it divides along lines of sex.
+- **The state of malaria diagnostics for young children** — specifically, what fraction of febrile
+  children under five receive a confirmatory blood test in malaria-endemic countries. Across
+  the 56 countries with available data, the average testing rate stands at just **24.4%** —
+  meaning roughly three in four symptomatic children are never confirmed or ruled out for malaria.
+
+Together these indicators reveal a fundamental truth: the risks children face are not randomly
+distributed. They are structured by **geography, poverty, and the depth of healthcare investment**.
+Understanding these patterns — accurately and in detail — is the first step towards dismantling them.
+
+---
+
+## 📊 Data & Methodology
+
+```{python}
+#| label: setup
+
+import polars as pl
+import pandas as pd
+import numpy as np
+import geopandas as gpd
+import warnings
+warnings.filterwarnings("ignore")
+
+from plotnine import (
+    ggplot, aes,
+    geom_map, geom_col, geom_point, geom_line, geom_smooth,
+    geom_text, geom_hline,
+    scale_fill_gradientn, scale_color_manual,
+    scale_x_continuous, scale_x_log10, scale_y_continuous,
+    coord_flip,
+    theme, theme_minimal, theme_void, theme_classic,
+    element_text, element_blank, element_line, element_rect,
+    labs
+)
+```
+
+```{python}
+#| label: load-data
+
+# ── Load datasets ────────────────────────────────────────────────────────────
+ind1 = pl.read_csv("unicef_indicator_1.csv")   # Deaths aged 10–19
+ind2 = pl.read_csv("unicef_indicator_2.csv")   # Malaria testing rate, under-5s
+meta = pl.read_csv("unicef_metadata.csv")      # Country economic & health metadata
+
+print(f"{'Dataset':<40} {'Rows':>8}  {'Countries':>12}  {'Years'}")
+print("─" * 72)
+print(
+    f"{'Indicator 1 — Adolescent Deaths (10–19)':<40}"
+    f" {ind1.shape[0]:>8,}  {ind1['country'].n_unique():>12}  "
+    f"{ind1['time_period'].min()}–{ind1['time_period'].max()}"
+)
+print(
+    f"{'Indicator 2 — Malaria Testing Rate':<40}"
+    f" {ind2.shape[0]:>8,}  {ind2['country'].n_unique():>12}  "
+    f"{ind2['time_period'].min()}–{ind2['time_period'].max()}"
+)
+print(
+    f"{'Metadata — Economic & Health Indicators':<40}"
+    f" {meta.shape[0]:>8,}  {meta['country'].n_unique():>12}  "
+    f"{meta['year'].min()}–{meta['year'].max()}"
+)
+```
+
+```{python}
+#| label: data-transformations
+
+# ═══════════════════════════════════════════════
+# INDICATOR 1 — Adolescent Deaths (ages 10–19)
+# ═══════════════════════════════════════════════
+
+# 1a. Total sex only, cleaned
+ind1_total = (
+    ind1
+    .filter(pl.col("sex") == "Total")
+    .select(["country", "alpha_3_code", "time_period", "obs_value"])
+    .rename({"time_period": "year", "obs_value": "deaths"})
+    .with_columns(pl.col("deaths").cast(pl.Float64))
+    .drop_nulls()
+)
+
+# 1b. Top-15 countries in most recent year — bar chart
+latest_year = int(ind1_total["year"].max())
+ind1_top15 = (
+    ind1_total
+    .filter(pl.col("year") == latest_year)
+    .sort("deaths", descending=True)
+    .head(15)
+    .to_pandas()
+)
+
+# 1c. By sex, globally aggregated by year — time-series
+ind1_sex = (
+    ind1
+    .filter(pl.col("sex").is_in(["Female", "Male"]))
+    .with_columns(pl.col("obs_value").cast(pl.Float64))
+    .drop_nulls(subset=["obs_value"])
+    .group_by(["time_period", "sex"])
+    .agg(pl.col("obs_value").sum().alias("total_deaths"))
+    .rename({"time_period": "year"})
+    .sort(["year", "sex"])
+    .to_pandas()
+)
+
+# ═══════════════════════════════════════════════
+# INDICATOR 2 — Malaria Diagnostic Testing Rate
+# ═══════════════════════════════════════════════
+
+# 2a. Average testing rate per country (all years, Total sex)
+ind2_avg = (
+    ind2
+    .filter(pl.col("sex") == "Total")
+    .with_columns(pl.col("obs_value").cast(pl.Float64))
+    .drop_nulls(subset=["obs_value"])
+    .group_by(["country", "alpha_3_code"])
+    .agg(pl.col("obs_value").mean().alias("avg_pct"))
+    .sort("avg_pct", descending=True)
+    .to_pandas()
+)
+
+# ═══════════════════════════════════════════════
+# METADATA — GDP per capita & Life Expectancy
+# ═══════════════════════════════════════════════
+
+# Most recent non-null GDP per country
+meta_gdp = (
+    meta
+    .filter(pl.col("GDP per capita (constant 2015 US$)").is_not_null())
+    .sort("year", descending=True)
+    .unique(subset=["alpha_3_code"], keep="first")
+    .select([
+        "alpha_3_code", "country",
+        pl.col("GDP per capita (constant 2015 US$)").alias("gdp"),
+        pl.col("Population, total").alias("population")
+    ])
+)
+
+# Most recent non-null life expectancy per country
+meta_life = (
+    meta
+    .filter(pl.col("Life expectancy at birth, total (years)").is_not_null())
+    .sort("year", descending=True)
+    .unique(subset=["alpha_3_code"], keep="first")
+    .select([
+        "alpha_3_code",
+        pl.col("Life expectancy at birth, total (years)").alias("life_exp")
+    ])
+)
+
+# Join for scatter plot
+scatter_df = (
+    meta_gdp
+    .join(meta_life, on="alpha_3_code", how="inner")
+    .drop_nulls()
+    .to_pandas()
+)
+
+# Summary
+print(f"Transformations complete:")
+print(f"  Bar chart   — top-15 countries, {latest_year}:     {len(ind1_top15)} rows")
+print(f"  Time-series — global deaths by sex:           {len(ind1_sex)} rows")
+print(f"  World map   — avg malaria testing rate:       {len(ind2_avg)} countries")
+print(f"  Scatter     — GDP vs life expectancy:         {len(scatter_df)} countries")
+```
+
+---
+
+## 🗺️ Chart 1 — Where Malaria Testing Fails Children
+
+Malaria kills over **600,000 people annually**, the overwhelming majority of them children under
+five in sub-Saharan Africa. It is both **preventable and curable** — but only if it is first
+*diagnosed*. Empirical treatment without a confirmatory test wastes scarce antibiotics, masks
+the true burden of disease, and leaves other causes of fever undetected.
+
+The world map below shows the **average malaria diagnostic testing rate** per country across all
+years of available data (2009–2024): the percentage of febrile children under age five who received
+a finger- or heel-stick blood test. A higher value indicates stronger diagnostic infrastructure
+and a higher likelihood that sick children receive correct, evidence-based care.
+
+```{python}
+#| label: fig-world-map
+#| fig-cap: "Average malaria diagnostic testing rate (%) in febrile children under 5. Averaged across all available years (2009–2024) per country. Grey = no data available in the UNICEF dataset."
+#| fig-width: 11
+#| fig-height: 5.8
+
+    # Load world geometry (from local GeoJSON mirror)
+    world_geo = gpd.read_file("world_map.geojson")
+world_merged = world_geo.merge(
+    ind2_avg[["alpha_3_code", "avg_pct"]],
+    left_on="ADM0_A3", right_on="alpha_3_code",
+    how="left"
+)
+
+(
+    ggplot(world_merged)
+    + geom_map(aes(fill="avg_pct"), color="white", size=0.12)
+    + scale_fill_gradientn(
+        colors=["#f1f8e9", "#81c784", "#388e3c", "#1b5e20"],
+        na_value="#d0d0d0",
+        name="Testing\nRate (%)",
+        limits=[0, 70]
+    )
+    + theme_void()
+    + theme(
+        plot_title=element_text(size=13, weight="bold", color="#1b5e20", ha="center"),
+        plot_subtitle=element_text(size=9.5, color="#555555", ha="center"),
+        legend_title=element_text(size=9),
+        legend_text=element_text(size=8),
+        figure_size=(11, 5.8),
+        plot_background=element_rect(fill="white"),
+    )
+    + labs(
+        title="Malaria Diagnostic Testing Rate in Febrile Children Under 5",
+        subtitle="Average across all reported years (2009–2024)  ·  Grey = no data"
+    )
+)
+```
+
+::: {.chart-note}
+**📌 Key insight:** The map immediately reveals two things: the data is concentrated in
+**malaria-endemic Africa and parts of South-East Asia**, and even within those regions,
+testing rates vary enormously. Sudan leads at **57.4%**, Equatorial Guinea at **45.9%**,
+and Zambia at **43.1%**. At the other extreme, Myanmar records just **3%** and Nepal **7%**.
+The global average across all 56 reporting countries is **24.4%** — meaning roughly three in
+four febrile young children are never tested. Countries shown in grey have no data at all in
+the UNICEF dataset, representing a separate but equally serious surveillance gap.
+:::
+
+---
+
+## 📊 Chart 2 — Countries Carrying the Heaviest Burden
+
+In 2023, the most recent year of UNICEF data, approximately **918,000 adolescents aged 10–19
+died worldwide** — a 31.5% decline from the 1,340,000 recorded in 1990. Progress is real,
+but the remaining burden is concentrated in a small number of countries.
+
+The bar chart below ranks the **15 countries with the highest adolescent death counts in 2023**.
+These 15 nations together account for roughly **60% of all global adolescent deaths** despite
+representing a fraction of the world's countries.
+
+```{python}
+#| label: fig-bar-chart
+#| fig-cap: "Top 15 countries by total adolescent deaths (ages 10–19), 2023. Counts are across all causes. Labels show exact death counts."
+#| fig-width: 9.5
+#| fig-height: 6.5
+
+(
+    ggplot(ind1_top15,
+           aes(x="reorder(country, deaths)", y="deaths", fill="deaths"))
+    + geom_col(width=0.74, show_legend=False)
+    + geom_text(
+        aes(label="deaths"),
+        format_string="{:,.0f}",
+        ha="left", size=8, color="#333333", nudge_y=600
+    )
+    + coord_flip()
+    + scale_fill_gradientn(
+        colors=["#c8e6c9", "#388e3c", "#1b5e20"]
+    )
+    + scale_y_continuous(
+        labels=lambda lst: [f"{int(x / 1000)}k" for x in lst],
+        expand=(0, 0, 0.16, 0)
+    )
+    + theme_minimal()
+    + theme(
+        axis_text_y=element_text(size=10, color="#222222"),
+        axis_text_x=element_text(size=9,  color="#555555"),
+        axis_title_x=element_text(size=10, color="#333333"),
+        plot_title=element_text(size=13, weight="bold", color="#1b5e20"),
+        plot_subtitle=element_text(size=9.5, color="#555555"),
+        panel_grid_major_y=element_blank(),
+        panel_grid_minor_x=element_blank(),
+        panel_grid_major_x=element_line(color="#eeeeee"),
+        plot_background=element_rect(fill="white"),
+        figure_size=(9.5, 6.5)
+    )
+    + labs(
+        title=f"Top 15 Countries by Adolescent Deaths — {latest_year}",
+        subtitle="Ages 10–19  ·  All causes  ·  Source: UNICEF Indicator 1",
+        x="",
+        y="Total Adolescent Deaths"
+    )
+)
+```
+
+::: {.chart-note}
+**📌 Key insight:** **India (133,850)** and **Nigeria (74,173)** together account for nearly
+**23% of all global adolescent deaths** in 2023. Population size is a contributing factor, but
+it is not the whole story. The **Democratic Republic of Congo (57,349)**, **Pakistan (40,505)**,
+and **Ethiopia (29,039)** all rank far higher than their population share would predict,
+reflecting the compounding effects of poverty, conflict, and limited healthcare access.
+Notably, the **United States (16,388)** appears in the top 15 — driven primarily by traffic
+accidents, gun violence, and drug overdoses — a reminder that high national income does not
+eliminate adolescent mortality risk.
+:::
+
+---
+
+## 💹 Chart 3 — Wealth, Health, and Diminishing Returns
+
+A foundational question in global health is how much of the variation in child survival outcomes
+can be explained simply by a country's **economic output**. The scatterplot below plots
+**GDP per capita** (constant 2015 USD, log-scaled) against **life expectancy at birth** for
+208 countries, using the most recent available data from the UNICEF metadata file.
+
+The Pearson correlation is **r = 0.61** — moderate to strong — confirming that economic
+development is one of the most powerful drivers of health outcomes. But the **log scale on the
+x-axis** tells an equally important story: returns are largest at the bottom of the income
+spectrum and diminish sharply as countries grow wealthier.
+
+```{python}
+#| label: fig-scatter
+#| fig-cap: "GDP per capita (constant 2015 USD, log scale) vs. life expectancy at birth. Most recent available data per country (n = 208). Green line = OLS linear regression with 95% confidence band (r = 0.61)."
+#| fig-width: 9.5
+#| fig-height: 6.2
+
+(
+    ggplot(scatter_df, aes(x="gdp", y="life_exp"))
+    + geom_point(color="#2e7d32", alpha=0.55, size=2.8)
+    + geom_smooth(method="lm", color="#1b5e20", fill="#a5d6a7", alpha=0.28, size=1.1)
+    + scale_x_log10(
+        labels=lambda lst: [f"${int(x):,}" for x in lst]
+    )
+    + scale_y_continuous(
+        limits=[45, 90],
+        labels=lambda lst: [f"{int(x)} yrs" for x in lst]
+    )
+    + theme_classic()
+    + theme(
+        plot_title=element_text(size=13, weight="bold", color="#1b5e20"),
+        plot_subtitle=element_text(size=9.5, color="#555555"),
+        axis_text=element_text(size=9, color="#444444"),
+        axis_title=element_text(size=10, color="#333333"),
+        panel_grid_major=element_line(color="#eeeeee"),
+        plot_background=element_rect(fill="white"),
+        figure_size=(9.5, 6.2)
+    )
+    + labs(
+        title="GDP per Capita vs. Life Expectancy at Birth — 208 Countries",
+        subtitle="Most recent available data · X-axis log scale · Pearson r = 0.61",
+        x="GDP per Capita (constant 2015 USD, log scale)",
+        y="Life Expectancy at Birth"
+    )
+)
+```
+
+::: {.chart-note}
+**📌 Key insight:** The log-linear shape of the relationship is the critical finding here.
+A country moving from **\$500 to \$5,000** per capita gains far more life expectancy than one
+moving from **\$30,000 to \$60,000**. Countries in the **lower-left cluster** — concentrated in
+sub-Saharan Africa — combine GDPs below \$2,000 with life expectancies between 55 and 65 years.
+High-income nations in the **upper-right** plateau above 80 years. The scatter of points around
+the regression line also confirms that **governance, policy, and public health investment** allow
+some countries to dramatically outperform their income level — and others to underperform.
+:::
+
+---
+
+## 📈 Chart 4 — Three Decades of Adolescent Deaths, by Sex
+
+The time-series below traces global adolescent deaths separately for **male and female adolescents**
+from 1990 to 2023. It is the most direct window into whether, and how quickly, the world is
+making progress on one of its most preventable human costs.
+
+Two findings stand out clearly in the data:
+
+**The long decline.** Both male and female deaths fell substantially between 1990 and 2015,
+driven by expanded vaccination, the scale-up of antiretroviral therapy, improved obstetric
+care, and targeted malaria interventions aligned with the Millennium Development Goals.
+
+**The stall.** Since approximately 2015, progress has decelerated. Global deaths edged upward
+in 2021 and 2022 before a slight fall in 2023 — likely reflecting COVID-19's disruption of
+routine health services and renewed or intensified conflicts in high-burden regions.
+
+```{python}
+#| label: fig-time-series
+#| fig-cap: "Global adolescent deaths (ages 10–19) by sex, 1990–2023. Each point is the globally aggregated annual sum. The dashed line marks the 2023 midpoint between male and female totals."
+#| fig-width: 10.5
+#| fig-height: 6.2
+
+midpoint_2023 = ind1_sex[ind1_sex["year"] == 2023]["total_deaths"].mean()
+
+(
+    ggplot(ind1_sex, aes(x="year", y="total_deaths", color="sex", group="sex"))
+    + geom_line(size=1.25, alpha=0.9)
+    + geom_point(size=2.2, alpha=0.8)
+    + geom_hline(
+        yintercept=midpoint_2023,
+        linetype="dashed", color="#aaaaaa", size=0.6
+    )
+    + scale_color_manual(
+        values={"Female": "#e57373", "Male": "#1b5e20"},
+        name="Sex"
+    )
+    + scale_y_continuous(
+        labels=lambda lst: [f"{x / 1_000_000:.2f}M" for x in lst]
+    )
+    + scale_x_continuous(
+        breaks=list(range(1990, 2025, 5)),
+        labels=lambda lst: [str(int(x)) for x in lst]
+    )
+    + theme_minimal()
+    + theme(
+        plot_title=element_text(size=13, weight="bold", color="#1b5e20"),
+        plot_subtitle=element_text(size=9.5, color="#555555"),
+        axis_text=element_text(size=9, color="#444444"),
+        axis_title=element_text(size=10, color="#333333"),
+        legend_title=element_text(size=10),
+        legend_text=element_text(size=9),
+        panel_grid_minor=element_blank(),
+        panel_grid_major=element_line(color="#eeeeee"),
+        plot_background=element_rect(fill="white"),
+        figure_size=(10.5, 6.2)
+    )
+    + labs(
+        title="Global Adolescent Deaths by Sex — 1990 to 2023",
+        subtitle="Ages 10–19  ·  All causes  ·  Source: UNICEF Indicator 1",
+        x="Year",
+        y="Total Deaths"
+    )
+)
+```
+
+::: {.chart-note}
+**📌 Key insight:** In 2023, male adolescent deaths totalled approximately **558,000** versus
+**360,000** for females — a **1.55-to-1 ratio** that has remained remarkably stable across the
+entire 33-year period. This gap is not biological destiny; it reflects higher male exposure to
+road traffic injuries (the leading cause of adolescent death globally), interpersonal violence,
+occupational hazards, and in some regions, conflict-related mortality. The dashed horizontal
+line marks the midpoint between male and female 2023 totals, visualising the gap's persistence.
+The post-2015 stall in progress is visible in both series simultaneously, suggesting systemic
+rather than sex-specific causes — most likely the disruption of healthcare infrastructure by
+conflict and the COVID-19 pandemic.
+:::
+
+---
+
+## 🔍 Key Findings
+
+::: {.stat-box}
+**📉 Progress is real, but incomplete.** Global adolescent deaths fell by **31.5%** between
+1990 and 2023 — from 1.34 million to 918,000. Yet 918,000 preventable deaths per year still
+amounts to roughly **2,500 young people every single day**, the overwhelming majority in
+low- and lower-middle-income countries.
+:::
+
+::: {.stat-box}
+**🦟 Malaria diagnostics remain critically underfunded.** Only **56 countries** report malaria
+testing data to UNICEF. Across those countries, the average rate of diagnostic testing in
+febrile children under five is just **24.4%**. Sudan leads at 57.4%; Myanmar records just 3%.
+The majority of children showing malaria symptoms in endemic regions are never confirmed.
+:::
+
+::: {.stat-box}
+**♂️ Male adolescents die 55% more often than females.** The male-to-female mortality ratio
+among 10–19 year-olds was **1.55 in 2023** — consistent across all three decades of data.
+This gap is largely driven by preventable causes: road accidents, violence, and occupational
+risks, all of which are amenable to policy and behavioural intervention.
+:::
+
+::: {.stat-box}
+**💰 Economic development saves lives, with diminishing returns.** The GDP–life expectancy
+correlation across 208 countries is **r = 0.61**. The log-linear relationship means the
+health returns to economic growth are highest at the bottom of the income spectrum, making
+the case for prioritising development aid in the lowest-income, highest-burden contexts.
+:::
+
+---
+
+## 📂 Data Sources
+
+The analysis in this report is based exclusively on publicly available data from UNICEF and
+the World Bank, accessed via the UNICEF Data Warehouse in 2025:
+
+| Dataset | Description | Coverage | Source |
+|---|---|---|---|
+| **unicef_indicator_1.csv** | Deaths aged 10 to 19, by sex and country, all causes | 199 countries, 1990–2023 | [UNICEF Data Warehouse](https://data.unicef.org/resources/data_explorer/unicef_f/?ag=UNICEF&df=GLOBAL_DATAFLOW&ver=1.0&dq=.CME_TMM0T19..&startPeriod=1990&endPeriod=2023) |
+| **unicef_indicator_2.csv** | Malaria diagnostics — % febrile children under 5 tested | 56 countries, 2009–2024 | [UNICEF Data Warehouse](https://data.unicef.org/topic/child-health/malaria/) |
+| **unicef_metadata.csv** | GDP per capita, life expectancy, population and macro indicators | 211 countries, 1960–2024 | [World Bank Open Data via UNICEF](https://data.worldbank.org/indicator) |
+
+All files were provided as part of **BAA1030 Module, Assignment 2**, Dublin City University
+(2024–2025). No external APIs, web scraping, or additional datasets were used in this analysis.
+
+---
+
+```{=html}
+<footer class="site-footer">
+  <p><strong>Data provided by</strong></p>
+  <div class="footer-logos">
+    <a href="https://data.unicef.org/" target="_blank" rel="noopener" title="UNICEF Data">
+      <span class="footer-brand unicef">UNICEF</span>
+    </a>
+    &nbsp;&nbsp;·&nbsp;&nbsp;
+    <a href="https://data.worldbank.org/" target="_blank" rel="noopener" title="World Bank Open Data">
+      <span class="footer-brand worldbank">World Bank</span>
+    </a>
+  </div>
+  <p style="margin-top:.9rem; font-size:.85rem;">
+    Rendered with <a href="https://quarto.org/" target="_blank">Quarto</a>
+    &nbsp;·&nbsp;
+    Data wrangling: <a href="https://pola.rs/" target="_blank">Polars</a>
+    &nbsp;·&nbsp;
+    Visualisations: <a href="https://plotnine.org/" target="_blank">plotnine (ggplot2 for Python)</a>
+  </p>
+  <p style="font-size:.80rem; color:#888; margin-top:.4rem;">
+    BAA1030 · Dublin City University · 2024–2025
+  </p>
+</footer>
+```
