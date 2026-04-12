@@ -1,7 +1,8 @@
 ---
 title: "When Children Bear the Burden"
 subtitle: "A UNICEF Data Analysis of Adolescent Mortality and Malaria Diagnostics Worldwide"
-author: "Akul Mehta DCU Student ID: A00097146"
+author: "Akul Mehta
+DCU Student ID: A00097146"
 date: today
 format:
   html:
@@ -616,7 +617,7 @@ the World Bank, accessed via the UNICEF Data Warehouse in 2025:
 | **unicef_metadata.csv** | GDP per capita, life expectancy, population and macro indicators | 211 countries, 1960–2024 | [World Bank Open Data via UNICEF](https://data.worldbank.org/indicator) |
 
 All files were provided as part of **BAA1030 Module, Assignment 2**, Dublin City University
-(2024–2025). No external APIs, web scraping, or additional datasets were used in this analysis.
+(2025–2026). No external APIs, web scraping, or additional datasets were used in this analysis.
 
 ---
 
@@ -640,7 +641,7 @@ All files were provided as part of **BAA1030 Module, Assignment 2**, Dublin City
     Visualisations: <a href="https://plotnine.org/" target="_blank">plotnine (ggplot2 for Python)</a>
   </p>
   <p style="font-size:.80rem; color:#888; margin-top:.4rem;">
-    BAA1030 · Dublin City University · 2024–2025
+    BAA1030 · Dublin City University · 2025–2026
   </p>
 </footer>
 ```
