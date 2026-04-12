@@ -1,7 +1,7 @@
 ---
 title: "When Children Bear the Burden"
 subtitle: "A UNICEF Data Analysis of Adolescent Mortality and Malaria Diagnostics Worldwide"
-author: "Your Name — DCU Student ID: XXXXXXX"
+author: "Akul Mehta DCU Student ID: A00097146"
 date: today
 format:
   html:
@@ -74,7 +74,7 @@ h3 { font-size: 1.2rem;  color: var(--green-mid); }
 }
 .stat-box strong { color: var(--green-dark); }
 
-/* ── Chart note ───────────────────────────────────────── */
+/* ──  note ───────────────────────────────────────── */
 .chart-note {
   background: #f9f9f9;
   border-left: 4px solid var(--green-border);
@@ -302,7 +302,7 @@ print(f"  Scatter     — GDP vs life expectancy:         {len(scatter_df)} coun
 
 ---
 
-## 🗺️ Chart 1 — Where Malaria Testing Fails Children
+## 🗺️ Where Malaria Testing Fails Children
 
 Malaria kills over **600,000 people annually**, the overwhelming majority of them children under
 five in sub-Saharan Africa. It is both **preventable and curable** — but only if it is first
@@ -365,7 +365,7 @@ the UNICEF dataset, representing a separate but equally serious surveillance gap
 
 ---
 
-## 📊 Chart 2 — Countries Carrying the Heaviest Burden
+## 📊 Countries Carrying the Heaviest Burden
 
 In 2023, the most recent year of UNICEF data, approximately **918,000 adolescents aged 10–19
 died worldwide** — a 31.5% decline from the 1,340,000 recorded in 1990. Progress is real,
@@ -433,7 +433,7 @@ eliminate adolescent mortality risk.
 
 ---
 
-## 💹 Chart 3 — Wealth, Health, and Diminishing Returns
+## 💹 Wealth, Health, and Diminishing Returns
 
 A foundational question in global health is how much of the variation in child survival outcomes
 can be explained simply by a country's **economic output**. The scatterplot below plots
@@ -493,7 +493,7 @@ some countries to dramatically outperform their income level — and others to u
 
 ---
 
-## 📈 Chart 4 — Three Decades of Adolescent Deaths, by Sex
+## 📈 Three Decades of Adolescent Deaths, by Sex
 
 The time-series below traces global adolescent deaths separately for **male and female adolescents**
 from 1990 to 2023. It is the most direct window into whether, and how quickly, the world is
