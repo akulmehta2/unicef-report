@@ -1,8 +1,7 @@
 ---
 title: "When Children Bear the Burden"
 subtitle: "A UNICEF Data Analysis of Adolescent Mortality and Malaria Diagnostics Worldwide"
-author: "Akul Mehta"
-author: "DCU Student ID: A00097146"
+author: "Akul Mehta" <br> "DCU Student ID: A00097146"
 date: today
 format:
   html:
